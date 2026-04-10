@@ -1,0 +1,7 @@
+# .gitignore
+
+# Node.js 의존성 패키지 디렉토리 (용량 최적화 및 불필요한 소스 트래킹 방지)
+node_modules/
+
+# Cloudflare Workers 로컬 개발 및 빌드 환경 캐시 디렉토리
+.wrangler/
