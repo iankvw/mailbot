@@ -2,12 +2,6 @@ import PostalMime from 'postal-mime';
 
 export default {
   async email(message, env, ctx) {
-    /**
-     * @description
-     * Cloudflare Workers 환경 변수(env)에 선언된 객체(Object) 형태의 라우팅 맵을 참조합니다.
-     * 수신자 이메일 주소(message.to)를 키(Key)로 사용하여 Webhook URL 및 포워딩 주소를 동적으로 할당하며,
-     * 명시적 매핑이 없을 경우 'catch_all' 정책으로 폴백(Fallback)합니다.
-     */
     const routingMap = env.ROUTING_MAP || {};
     const currentRoute = routingMap[message.to] || routingMap["catch_all"];
 
@@ -21,7 +15,6 @@ export default {
 
     let forwardStatus = "";
     
-    // 포워딩 이메일 주소가 정의된 경우에 한하여 메시지 전달(Forwarding) 트랜잭션을 수행합니다.
     if (forwardEmail) {
       try {
         await message.forward(forwardEmail);
@@ -36,6 +29,16 @@ export default {
     const isTextGarbage = email.text && (email.text.includes('<table') || email.text.includes('<div'));
     let rawBody = (isTextGarbage && email.html) ? email.html : (email.text || email.html || "내용이 없거나 이미지만 있는 메일입니다.");
 
+    /**
+     * @description
+     * HTML 본문의 앵커 태그(Anchor Tag, <a>)를 Discord 지원 마크다운(Markdown) 하이퍼링크 형식으로 선행 변환합니다.
+     * 이후 진행되는 HTML 태그 일괄 제거 로직(<[^>]+>)에서 링크 정보가 소실되는 것을 방지하기 위한 전처리 과정입니다.
+     */
+    if (rawBody === email.html) {
+      // <a href="URL">텍스트</a> 형태를 [텍스트](URL) 형태의 마크다운으로 치환
+      rawBody = rawBody.replace(/<a\s+(?:[^>]*?\s+)?href=["'](https?:\/\/[^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi, '[$2]($1)');
+    }
+
     // 통합 문자열 정제 파이프라인 (Unified String Normalization Pipeline)
     let body = rawBody
       // HTML 태그를 강제로 제거합니다.
@@ -48,7 +51,20 @@ export default {
       .replace(/(\r?\n\s*){3,}/g, '\n')
       .trim()
       // 디스코드 Webhook Embed 필드의 최대 허용 길이(Description Limit)에 맞춰 1500자로 슬라이싱합니다.
-      .slice(0, 1500);
+
+    body = body.replace(/(https?:\/\/[^\s\)]+)/g, (match) => {
+      // 정규식 매칭 결과에서 불필요한 후행 구두점 제거를 위한 방어 로직
+      const cleanUrl = match.replace(/[.,;]$/, '');
+      
+      // URL 문자열 길이가 50자를 초과할 경우 축약 표기로 치환하여 UI 레이아웃 붕괴를 방지
+      if (cleanUrl.length > 50) {
+        return `[🔗](${cleanUrl})`;
+      }
+      // 50자 이하의 정상적인 짧은 URL은 원형 보존
+      return cleanUrl;
+    });
+
+    body = body.slice(0, 1500);
 
     const embedDescription = `${body}\n\nFrom: \`${email.from?.address || '주소없음'}\` (${email.from?.name || '이름없음'})\nTo: \`${message.to}\`${forwardStatus}`;
 
@@ -79,3 +95,4 @@ export default {
     }
   }
 };
+// npx wrangler deploy
