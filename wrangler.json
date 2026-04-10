@@ -3,7 +3,19 @@
   "main": "index.js",
   "compatibility_date": "2026-04-10",
   "vars": {
-    "FORWARD_EMAIL": "someone@example.com",
-    "DISCORD_WEBHOOK_URL": "https://discord.com/api/webhooks/webhookurl"
+    "ROUTING_MAP": {
+      "1@mydomain.com": {
+        "webhookUrl": "https://discord.com/api/webhooks/웹훅주소1",
+        "forwardEmail": "전달받을이메일1@example.com"
+      },
+      "2@mydomain.com": {
+        "webhookUrl": "https://discord.com/api/webhooks/웹훅주소2",
+        "forwardEmail": "전달받을이메일2@example.com"
+      },
+      "catch_all": {
+        "webhookUrl": "https://discord.com/api/webhooks/기본웹훅주소",
+        "forwardEmail": "기본전달이메일@example.com"
+      }
+    }
   }
 }
