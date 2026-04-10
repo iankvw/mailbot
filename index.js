@@ -53,8 +53,24 @@ export default {
       return `[🔗](${cleanUrl})`;
     });
 
-    // 디스코드 Webhook Embed 필드의 최대 허용 길이(Description Limit)에 맞춰 1500자로 슬라이싱합니다.
-    body = body.slice(0, 1500);
+    /**
+     * @description
+     * Discord Embed Description 필드의 최대 허용 한도(4096자)를 고려하여 본문 길이를 3500자로 제한합니다.
+     * 문자열 절삭(Truncation) 시 마크다운 링크 문법([text](url))이 훼손되는 현상을 방지하기 위해,
+     * 불완전하게 종료된 마크다운 꼬리(Trailing broken link)를 정규식을 통해 안전하게 제거합니다.
+     */
+    const MAX_LENGTH = 3500;
+    if (body.length > MAX_LENGTH) {
+      body = body.slice(0, MAX_LENGTH);
+      
+      // 1. [🔗](URL... 형태로 소괄호가 닫히지 않은 경우 해당 구문 전체 제거
+      body = body.replace(/\[[^\]]*\]\([^)]*$/, '');
+      // 2. [🔗... 형태로 대괄호조차 닫히지 않은 경우 해당 구문 전체 제거
+      body = body.replace(/\[[^\]]*$/, '');
+      
+      // 절삭되었음을 명시적으로 알리는 후행 문자열 추가
+      body += '\n\n*...*';
+    }
 
     const embedDescription = `${body}\n\nFrom: \`${email.from?.address || '주소없음'}\` (${email.from?.name || '이름없음'})\nTo: \`${message.to}\`${forwardStatus}`;
 
