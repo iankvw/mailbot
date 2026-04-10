@@ -2,8 +2,8 @@ import PostalMime from 'postal-mime';
 
 export default {
   async email(message, env, ctx) {
-    const discordUrl = "https://discord.com/api/webhooks/webhookurl";
-    const forwardEmail = "someone@example.com";
+    const discordUrl = env.DISCORD_WEBHOOK_URL;
+    const forwardEmail = env.FORWARD_EMAIL;
 
     let forwardStatus = "";
     try {
@@ -33,14 +33,18 @@ export default {
       .replace(/^\s*\.\s*$/gm, '')
       // 5. 2개 이상의 연속된 가로 공백(Space, Tab)을 단일 공백으로 압축합니다.
       .replace(/[ \t]{2,}/g, ' ')
-      // 6. 3개 이상의 연속된 수직 개행(Line-break)을 압축하여 불필요한 여백을 최소화합니다.
+      // 6. 3개 이상의 연속된 수직 개행(Line-break)을 단일 개행으로 압축하여 불필요한 여백을 최소화합니다.
       .replace(/(\r?\n\s*){3,}/g, '\n')
       // 7. 문자열 양끝의 무의미한 공백 및 개행을 트리밍합니다.
       .trim()
       // 8. 디스코드 Webhook Embed 필드의 최대 허용 길이(Description Limit)에 맞춰 1500자로 슬라이싱합니다.
       .slice(0, 1500);
 
-    const embedDescription = `${body}\n\nFrom: \`${email.from.address}\` (${email.from.name || '이름없음'})\nTo: \`${message.to}\`${forwardStatus}`;
+    /**
+     * @description
+     * Optional Chaining(?.)을 적용하여 email.from 객체가 존재하지 않거나 불완전할 경우 발생하는 런타임 에러를 방지합니다.
+     */
+    const embedDescription = `${body}\n\nFrom: \`${email.from?.address || '주소없음'}\` (${email.from?.name || '이름없음'})\nTo: \`${message.to}\`${forwardStatus}`;
 
     const embedPayload = {
       embeds: [{
@@ -50,12 +54,23 @@ export default {
       }]
     };
 
-    // 정제된 페이로드를 Discord Webhook API 엔드포인트로 비동기 전송(POST)합니다.
-    await fetch(discordUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(embedPayload)
-    });
+    /**
+     * @description
+     * 외부 API(Discord Webhook) 통신 시 발생할 수 있는 네트워크 예외 및 HTTP 오류 상태를 핸들링합니다.
+     */
+    try {
+      const response = await fetch(discordUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(embedPayload)
+      });
+
+      // HTTP 상태 코드가 200~299 범위가 아닐 경우 에러 로깅 처리
+      if (!response.ok) {
+        console.error(`Discord Webhook 전송 실패: HTTP Status ${response.status}`);
+      }
+    } catch (error) {
+      console.error("Discord Webhook 전송 중 네트워크 예외 발생:", error);
+    }
   }
 };
-// npx wrangler deploy

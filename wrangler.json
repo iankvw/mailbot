@@ -1,5 +1,9 @@
 {
   "name": "mailbot",
   "main": "index.js",
-  "compatibility_date": "2026-04-10"
+  "compatibility_date": "2026-04-10",
+  "vars": {
+    "FORWARD_EMAIL": "someone@example.com",
+    "DISCORD_WEBHOOK_URL": "https://discord.com/api/webhooks/webhookurl"
+  }
 }
