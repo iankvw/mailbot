@@ -67,9 +67,6 @@ export default {
       body = body.replace(/\[[^\]]*\]\([^)]*$/, '');
       // 2. [🔗... 형태로 대괄호조차 닫히지 않은 경우 해당 구문 전체 제거
       body = body.replace(/\[[^\]]*$/, '');
-      
-      // 절삭되었음을 명시적으로 알리는 후행 문자열 추가
-      body += '\n\n*...*';
     }
 
     const embedDescription = `${body}\n\nFrom: \`${email.from?.address || '주소없음'}\` (${email.from?.name || '이름없음'})\nTo: \`${message.to}\`${forwardStatus}`;
