@@ -1,6 +1,6 @@
 {
   "name": "mailbot",
-  "version": "11.3.7",
+  "version": "11.3.9",
   "type": "commonjs",
   "description": "",
   "main": "index.js",
