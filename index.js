@@ -2,7 +2,7 @@ import PostalMime from 'postal-mime';
 
 export default {
   async email(message, env, ctx) {
-    const routingMap = env.ROUTING_MAP || {};
+    const routingMap = env.ROUTING_SECRET ? JSON.parse(env.ROUTING_SECRET) : (env.ROUTING_MAP || {});
     const currentRoute = routingMap[message.to] || routingMap["catch_all"];
 
     if (!currentRoute || !currentRoute.webhookUrl) {
@@ -98,4 +98,3 @@ export default {
     }
   }
 };
-// npx wrangler deploy
